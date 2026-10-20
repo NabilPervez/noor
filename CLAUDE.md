@@ -29,6 +29,10 @@ noor ask "question"                                  # add --passages to see wha
 noor log                                             # recent queries: model, tokens, cost, latency
 pytest
 python scripts/leak_check.py                         # before every push
+sh scripts/safe_push.sh sprint-N "msg"               # gate + push + tag (never pipe the gate)
+uvicorn api.main:app --host 127.0.0.1 --port 8000    # API (local only: it serves passage text)
+npm --prefix web install && npm --prefix web run dev # UI at http://127.0.0.1:5317
+python -m evals.run --model <m> && python -m evals.report
 ```
 
 ## Layout
@@ -36,7 +40,8 @@ python scripts/leak_check.py                         # before every push
 - `noor/cli.py`: CLI entry point
 - `ingest/`: reads the Book Converter / Book Reader library and the Quran/hadith APIs
 - `rag/`: chunk, embed, store, retrieve, providers, answer, log
-- `api/`, `web/`: Sprint 4
+- `api/main.py`: FastAPI for the UI (`/api/ask`, `/api/chunk/{id}`, `/api/models`)
+- `web/`: React + Vite + Tailwind chat with citation drawer
 - `evals/`, `reports/`, `governance/`: Sprints 2–4
 - `samples/library/`: self-written fake book used by tests and the demo
 - `data/`: git-ignored. Chroma, the SQLite log and API caches go here

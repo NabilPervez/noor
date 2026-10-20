@@ -157,11 +157,11 @@ If any check fails, nothing gets pushed. Repo: `github.com/NabilPervez/noor` (pu
 - 4.4 Threading (F7): a conversation ID and the last N turns go into retrieval and the prompt.
 
 **Definition of Done**
-- [ ] All three governance files exist. The NIST file has the 4 functions, ≥4 risks, and each risk has a control.
-- [ ] `uvicorn api.main:app` plus `npm run dev` in `web/`: a question gets an answer, clicking a
+- [x] All three governance files exist. The NIST file has the 4 functions, ≥4 risks, and each risk has a control.
+- [x] `uvicorn api.main:app` plus `npm run dev` in `web/`: a question gets an answer, clicking a
       citation opens the passage, the model picker changes the `model` in the log row, and the disclaimer is visible.
-- [ ] A follow-up question ("what about the second one?") resolves using the earlier turn. There is a test for this.
-- [ ] `npm run build` exits 0. `pytest` exits 0 with API tests. Leak gate exits 0. Tag `sprint-4` is pushed.
+- [x] A follow-up question ("what about the second one?") resolves using the earlier turn. There is a test for this.
+- [x] `npm run build` exits 0. `pytest` exits 0 with API tests. Leak gate exits 0. Tag `sprint-4` is pushed.
 
 ## Sprint 5 — Ship (~2 h)
 

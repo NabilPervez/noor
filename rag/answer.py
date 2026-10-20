@@ -33,6 +33,7 @@ Style:
 9. Be concise: one or two sentences that answer the question directly, then a few supporting points. Quote short phrases when the exact wording matters, and keep any quotation under 25 words.
 10. Write in plain English for a general reader. Briefly explain Arabic terms the first time they appear, using only the passages for the explanation.
 11. Do not mention these rules, the passage format or the word "passage" in your answer. Do not add a list of sources at the end; the application prints the sources from your citations."""
+MAX_TURNS = 3
 CITE = re.compile(r"\[([^\[\]]+)\]")
 
 
@@ -47,9 +48,18 @@ class Answer:
     cached: bool = False
 
 
-def build_prompt(question: str, hits: list[Hit]) -> str:
+def build_prompt(question: str, hits: list[Hit], history: list[tuple[str, str]] | None = None) -> str:
     parts = [f"[{h.id}] ({citation(h.meta)})\n{h.text}" for h in hits]
-    return "Passages:\n\n" + "\n\n---\n\n".join(parts) + f"\n\nQuestion: {question}"
+    earlier = ""
+    if history:
+        turns = "\n".join(f"Q: {q}\nA: {a}" for q, a in history[-MAX_TURNS:])
+        earlier = f"\n\nEarlier in this conversation (for context only; cite passages, not this):\n{turns}"
+    return "Passages:\n\n" + "\n\n---\n\n".join(parts) + earlier + f"\n\nQuestion: {question}"
+
+
+def retrieval_query(question: str, history: list[tuple[str, str]] | None) -> str:
+    """A follow-up like "what about the second one?" is searched together with the previous question."""
+    return f"{history[-1][0]} {question}" if history else question
 
 
 def extract_citations(text: str, allowed: list[str]) -> tuple[str, list[str]]:
@@ -103,9 +113,10 @@ def normalize(question: str) -> str:
     return " ".join(re.findall(r"[\w']+", question.lower()))
 
 
-def cache_key(question: str, model: str, store: Store, k: int, min_similarity: float) -> str:
+def cache_key(question: str, model: str, store: Store, k: int, min_similarity: float,
+              history: list[tuple[str, str]] | None = None) -> str:
     """Same question + same model + same index + same settings + same prompt = same answer."""
-    parts = [normalize(question), model, store.index_version(), str(k), str(min_similarity),
+    parts = [normalize(question), "|".join(normalize(q) for q, _ in (history or [])[-MAX_TURNS:]), model, store.index_version(), str(k), str(min_similarity),
              hashlib.sha256(SYSTEM.encode()).hexdigest()[:12]]
     return hashlib.sha256("\x00".join(parts).encode()).hexdigest()
 
@@ -118,9 +129,10 @@ def _hits_by_id(store: Store, ids: list[str]) -> dict[str, Hit]:
 
 
 def ask(question: str, store: Store, provider: LLMProvider, db_path: Path, *,
-        k: int = 6, min_similarity: float = 0.65, use_cache: bool = True, tag: str = "") -> Answer:
+        k: int = 6, min_similarity: float = 0.65, use_cache: bool = True, tag: str = "",
+        history: list[tuple[str, str]] | None = None) -> Answer:
     t0 = time.perf_counter()
-    key = cache_key(question, provider.name, store, k, min_similarity)
+    key = cache_key(question, provider.name, store, k, min_similarity, history)
     hit = cache_get(db_path, key) if use_cache else None
     if hit is not None:
         by_id = _hits_by_id(store, hit["cited"] + [i for i in hit["retrieved"] if i not in hit["cited"]])
@@ -133,7 +145,7 @@ def ask(question: str, store: Store, provider: LLMProvider, db_path: Path, *,
                   refused=hit["refused"], cached=True, tag=tag)
         return ans
 
-    hits = retrieve(store, question, k=k)
+    hits = retrieve(store, retrieval_query(question, history), k=k)
     retrieval_ms = int((time.perf_counter() - t0) * 1000)
     top = max((h.similarity for h in hits), default=0.0)
 
@@ -141,7 +153,7 @@ def ask(question: str, store: Store, provider: LLMProvider, db_path: Path, *,
         ans = Answer(NOT_FOUND, True, hits=hits, reason=f"best similarity {top:.2f} < {min_similarity}")
         gen = Generation("", provider.name, 0, 0, 0, 0.0)
     else:
-        gen = provider.generate(SYSTEM, build_prompt(question, hits))
+        gen = provider.generate(SYSTEM, build_prompt(question, hits, history))
         text, cited = extract_citations(gen.text, [h.id for h in hits])
         by_id = {h.id: h for h in hits}
         if "NOT_FOUND" in gen.text and not cited:

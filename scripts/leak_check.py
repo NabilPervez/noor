@@ -143,11 +143,12 @@ def full() -> int:
         fails.append(f"history contains {len(hits)} 12-word runs from the library")
 
     print("4. samples/ are self-written and small")
-    tracked = [n for n in git("ls-files").splitlines() if n]
-    for n in tracked:
-        if n.startswith("samples/") and (ROOT / n).stat().st_size > SAMPLES_MAX_BYTES:
+    # Check what is committed (HEAD), not the working folder: that is what a push publishes.
+    tracked = [n for n in git("ls-tree", "-r", "--name-only", "HEAD").splitlines() if n]
+    items = [(n, git("show", f"HEAD:{n}")) for n in tracked]
+    for n, content in items:
+        if n.startswith("samples/") and len(content.encode("utf-8")) > SAMPLES_MAX_BYTES:
             fails.append(f"{n} is over {SAMPLES_MAX_BYTES} bytes")
-    items = [(n, (ROOT / n).read_text(encoding="utf-8", errors="replace")) for n in tracked]
     fails += check_paths_and_content(items, ref)
 
     for f in fails:
