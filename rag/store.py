@@ -6,6 +6,7 @@ import json
 import math
 import pickle
 import re
+import unicodedata
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -22,8 +23,29 @@ STOP = set("a an and are as at be by for from has have he her his i in is it its
 BATCH = 64
 
 
+def fold(text: str) -> str:
+    """Lowercase and strip diacritics, so "al-Wadūd" and "Al-Wadud" match ("wadud", not "wad" + "d")."""
+    text = unicodedata.normalize("NFKD", text.lower())
+    return "".join(c for c in text if not unicodedata.combining(c)).replace("’", "'")
+
+
+SUFFIXES = ("ings", "ing", "edly", "ed", "ies", "es", "s", "ly")
+
+
+def stem(w: str) -> str:
+    """Light suffix stripping so intention/intentions and love/loving meet. Short words are left alone."""
+    if len(w) <= 3 or w.endswith("ss"):
+        return w
+    for suf in SUFFIXES:
+        if w.endswith(suf) and len(w) - len(suf) >= 3:
+            w = w[: -len(suf)] + ("y" if suf == "ies" else "")
+            break
+    return w[:-1] if w.endswith("e") and len(w) > 3 else w
+
+
 def tokenize(text: str) -> list[str]:
-    return [w for w in re.findall(r"[a-z0-9]+", text.lower()) if w not in STOP and len(w) > 1]
+    words = re.findall(r"[a-z0-9]+", fold(text).replace("'", ""))
+    return [stem(w) for w in words if w not in STOP and len(w) > 1]
 
 
 class BM25(BM25Okapi):

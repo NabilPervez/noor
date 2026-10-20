@@ -1,0 +1,142 @@
+# Noor golden set. Questions are self-written; `expect` holds source IDs only, never passage text.
+#
+# expect formats (a question passes retrieval if ANY retrieved chunk matches ANY entry):
+#   <book-id>/<chapter-id>   a chapter of a library book (prefix match: "<book-id>/" = any chapter)
+#   quran:<surah>:<ayah>     a retrieved Quran chunk whose ayah range contains this ayah
+#   bukhari:<number>         that hadith
+# answerable: false          the library can't answer it; the correct behaviour is a refusal.
+
+questions:
+  # --- Library books (labelled from chapter titles) ---
+  - id: b01
+    q: What does Al-Ghazali advise about envy?
+    expect: [beginning-of-guidance/028-envy]
+  - id: b02
+    q: How should one guard the tongue against lying and backbiting?
+    expect: [beginning-of-guidance/021-guarding-the-tongue-against-lying-breaki]
+  - id: b03
+    q: What are the rules of ablution?
+    expect: [beginning-of-guidance/006-rules-of-ablution]
+  - id: b04
+    q: What is the praiseworthy way to wake up from sleep?
+    expect: [beginning-of-guidance/004-praiseworthy-way-of-waking-from-sleep]
+  - id: b05
+    q: What are a teacher's duties toward students?
+    # Revised 2026-10-20: the paired chapter 034 (association with teachers) covers the same duties.
+    expect: [beginning-of-guidance/033-association-with-students, beginning-of-guidance/034-association-with-teach]
+  - id: b06
+    q: What is the meaning of the divine name Al-Wadud?
+    expect: [ninety-nine-names-of-god/045-al-wadud-the-objectively-loving-one]
+  - id: b07
+    q: What does the name Ar-Razzaq, the Provider, mean?
+    expect: [ninety-nine-names-of-god/018-ar-razzaq-the-one-who-provides-all-suste]
+  - id: b08
+    q: What does it mean that God is Al-Ghaffar, the Very Forgiving?
+    expect: [ninety-nine-names-of-god/015-al-ghaffar-the-very-forgiving-one]
+  - id: b09
+    q: What are the ethics of eating?
+    expect: [the-refinement-of-character/004-on-the-ethics-of-eating]
+  - id: b10
+    q: What are the ethics of earning a livelihood?
+    expect: [the-refinement-of-character/006-on-the-ethics-in-earning-a-livelihood]
+  - id: b11
+    q: What does the book say about listening to music and singing?
+    expect: [the-refinement-of-character/013-on-the-ruling-of-listening-to-music-and]
+  - id: b12
+    q: What happened at the Battle of Uhud?
+    expect: [the-sirah-of-the-prophet-pbuh/023-chapter-16-the-battle-of-uhud]
+  - id: b13
+    q: What was the Treaty of Hudaybiyyah?
+    expect: [the-sirah-of-the-prophet-pbuh/027-chapter-20-the-treaty-of-hudaybiyyah]
+  - id: b14
+    q: What happened in the Year of Sorrow?
+    expect: [the-sirah-of-the-prophet-pbuh/015-chapter-9-the-year-of-sorrow]
+  - id: b15
+    q: Why did early Muslims emigrate to Abyssinia?
+    expect: [the-sirah-of-the-prophet-pbuh/013-chapter-7-emigration-to-abyssinia]
+  - id: b16
+    q: What happened at the Battle of the Trench?
+    expect: [the-sirah-of-the-prophet-pbuh/026-chapter-19-the-battle-of-the-trench-khan]
+  - id: b17
+    q: How did the Prophet show mercy and compassion?
+    expect: [proofs-for-the-prophethood-of-muhammad/011-3-his-mercy-and-compassion]
+  - id: b18
+    q: Why does Islam prohibit interest-based lending?
+    expect: [proofs-for-the-prophethood-of-muhammad/027-6-prohibiting-interest-based-lending]
+  - id: b19
+    q: What is the prophecy that the Byzantines would rebound?
+    expect: [proofs-for-the-prophethood-of-muhammad/032-1-the-byzantines-will-rebound]
+  - id: b20
+    q: Is the Prophet Muhammad foretold in the Bible?
+    expect: [proofs-for-the-prophethood-of-muhammad/007-4-the-biblical-necessity-of-prophethood]
+  - id: b21
+    q: Why do bad things always happen to me?
+    expect: [addressing-the-impact-of-trauma-on-faith/004-chapter-1-why-do-bad-things-always-happe]
+  - id: b22
+    q: How can I learn to trust again after being hurt?
+    expect: [addressing-the-impact-of-trauma-on-faith/007-chapter-4-how-can-i-trust-again]
+  - id: b23
+    q: I feel like Allah hates me. What do my books say?
+    expect: [addressing-the-impact-of-trauma-on-faith/008-chapter-5-why-does-allah-hate-me]
+  - id: b24
+    q: Why does everyone else's life seem better than mine?
+    expect: [addressing-the-impact-of-trauma-on-faith/012-chapter-9-why-is-everyones-life-better-t]
+  - id: b25
+    q: According to Al-Ghazali, how does knowing oneself lead to knowing God?
+    expect: [the-alchemy-of-happiness/]
+  - id: b26
+    q: What are the main themes of the first juz of the Quran?
+    expect: [qur-an-30-for-30-thematic-tafsir/003-juz-one-thematic-overview,
+             qur-an-30-for-30-thematic-tafsir/004-juz-one-the-seerah,
+             qur-an-30-for-30-thematic-tafsir/005-juz-one-judgment-day,
+             qur-an-30-for-30-thematic-tafsir/006-juz-one-quranic-worldview]
+
+  # --- Quran (well-known verses) ---
+  - id: q01
+    q: What does the Quran say about seeking help through patience and prayer?
+    expect: [quran:2:45, quran:2:153]
+  - id: q02
+    q: Which verse describes God's Throne extending over the heavens and the earth?
+    expect: [quran:2:255]
+  - id: q03
+    q: What does Surah al-Ikhlas say about God's oneness?
+    expect: [quran:112:1]
+  - id: q04
+    q: Does God burden a soul with more than it can bear?
+    expect: [quran:2:286]
+  - id: q05
+    q: What does the Quran say about time and humanity being in loss?
+    expect: [quran:103:2]
+  - id: q06
+    q: Does the Quran say that ease comes with hardship?
+    expect: [quran:94:5, quran:94:6]
+  - id: q07
+    q: What does the Quran command about honouring parents?
+    expect: [quran:17:23]
+
+  # --- Hadith (Sahih al-Bukhari, hadith-api numbering) ---
+  - id: h01
+    q: What did the Prophet say about actions and intentions?
+    # Revised 2026-10-20: Bukhari repeats this narration; all seven placements are correct sources.
+    expect: [bukhari:1, bukhari:54, bukhari:2529, bukhari:3898, bukhari:5070, bukhari:6689, bukhari:6953]
+  - id: h02
+    q: Is there a hadith about loving for your brother what you love for yourself?
+    expect: [bukhari:13]
+  - id: h03
+    q: Who is truly strong, according to the Prophet?
+    expect: [bukhari:6114]
+  - id: h04
+    q: What should someone who believes in Allah and the Last Day do with their speech?
+    expect: [bukhari:6018, bukhari:6019, bukhari:6136, bukhari:6138, bukhari:6475, bukhari:6476]
+
+  # --- Unanswerable: the right answer is a refusal ---
+  - {id: u01, q: "What is the capital of Australia?", answerable: false}
+  - {id: u02, q: "How do I change the oil in a Toyota Corolla?", answerable: false}
+  - {id: u03, q: "Who won the 2018 FIFA World Cup?", answerable: false}
+  - {id: u04, q: "How many moons does Jupiter have?", answerable: false}
+  - {id: u05, q: "What programming language is Kubernetes written in?", answerable: false}
+  - {id: u06, q: "What is a good recipe for chocolate chip cookies?", answerable: false}
+  # Islamic-sounding traps the library does not cover:
+  - {id: u07, q: "What does Imam al-Shafi'i write in al-Umm about the conditions of a sales contract?", answerable: false}
+  - {id: u08, q: "Quote Sahih al-Bukhari hadith number 98765.", answerable: false}
+  - {id: u09, q: "What did Ibn Taymiyyah rule about cryptocurrency trading?", answerable: false}

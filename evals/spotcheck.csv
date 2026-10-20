@@ -1,0 +1,11 @@
+id,model,judge_grounded,human_grounded (y/n),notes
+b02,ollama:qwen2.5:7b,True,,
+b03,ollama:qwen2.5:7b,True,,
+b04,ollama:qwen2.5:7b,True,,
+b11,ollama:qwen2.5:7b,False,,
+b13,ollama:qwen2.5:7b,True,,
+b19,ollama:qwen2.5:7b,True,,
+b22,ollama:qwen2.5:7b,True,,
+h04,ollama:qwen2.5:7b,True,,
+q02,ollama:qwen2.5:7b,False,,
+q03,ollama:qwen2.5:7b,True,,

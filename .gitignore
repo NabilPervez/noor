@@ -22,3 +22,6 @@ dist/
 # Web (Sprint 4)
 node_modules/
 web/dist/
+
+# Local tool config
+.claude/

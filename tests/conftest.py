@@ -31,6 +31,6 @@ class FakeProvider:
     def __init__(self, reply: str = "NOT_FOUND"):
         self.reply, self.calls = reply, 0
 
-    def generate(self, system: str, user: str) -> Generation:
+    def generate(self, system: str, user: str, json_mode: bool = False) -> Generation:
         self.calls += 1
         return Generation(self.reply, self.name, 1000, 100, 5, 0.0)

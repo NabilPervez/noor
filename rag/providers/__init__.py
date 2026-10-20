@@ -37,7 +37,7 @@ class Generation:
 class LLMProvider(Protocol):
     name: str
 
-    def generate(self, system: str, user: str) -> Generation: ...
+    def generate(self, system: str, user: str, json_mode: bool = False) -> Generation: ...
 
 
 def cost(model: str, tokens_in: int, tokens_out: int, cache_write: int = 0, cache_read: int = 0) -> float:
@@ -54,7 +54,7 @@ class ClaudeProvider:
         self.model = CLAUDE_ALIASES.get(model, model)
         self.name = self.model
 
-    def generate(self, system: str, user: str) -> Generation:
+    def generate(self, system: str, user: str, json_mode: bool = False) -> Generation:
         t0 = time.perf_counter()
         r = self.client.messages.create(
             model=self.model, max_tokens=2000,
@@ -78,11 +78,13 @@ class OllamaProvider:
     def __init__(self, model: str, host: str = "http://localhost:11434"):
         self.model, self.host, self.name = model, host.rstrip("/"), f"ollama:{model}"
 
-    def generate(self, system: str, user: str) -> Generation:
+    def generate(self, system: str, user: str, json_mode: bool = False) -> Generation:
         t0 = time.perf_counter()
-        r = httpx.post(f"{self.host}/api/chat", timeout=600, json={
-            "model": self.model, "stream": False, "options": {"temperature": 0.1, "num_ctx": 8192},
-            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]})
+        body = {"model": self.model, "stream": False, "options": {"temperature": 0.1, "num_ctx": 8192},
+                "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+        if json_mode:
+            body["format"] = "json"
+        r = httpx.post(f"{self.host}/api/chat", timeout=600, json=body)
         r.raise_for_status()
         d = r.json()
         return Generation(d["message"]["content"], self.name, d.get("prompt_eval_count", 0),

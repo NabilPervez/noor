@@ -138,10 +138,12 @@ If any check fails, nothing gets pushed. Repo: `github.com/NabilPervez/noor` (pu
 - 3.4 `evals/spotcheck.csv`: human spot-check of 10 answers per model.
 
 **Definition of Done**
-- [ ] `python -m evals.run --model claude-haiku` (and sonnet, ollama) exits 0.
-- [ ] `reports/eval.md` has a scores table per model and a GO or NO-GO line per model against the rubric.
-- [ ] The golden set has ≥30 questions, and between 5 and 10 of them are unanswerable.
-- [ ] Leak gate exits 0. It scans `evals/` and `reports/` too. Tag `sprint-3` is pushed.
+- [~] `python -m evals.run --model claude-haiku` (and sonnet, ollama) exits 0.
+      *Status 2026-10-20: ollama:qwen2.5:7b run complete (NO-GO on groundedness, 79.4% vs 90%). Claude runs wait
+      for an `ANTHROPIC_API_KEY`. The human spot-check in `evals/spotcheck.csv` is waiting for a person.*
+- [x] `reports/eval.md` has a scores table per model and a GO or NO-GO line per model against the rubric.
+- [x] The golden set has ≥30 questions, and between 5 and 10 of them are unanswerable.
+- [x] Leak gate exits 0. It scans `evals/` and `reports/` too. Tag `sprint-3` is pushed.
 
 ## Sprint 4 — Governance + UI (~1 weekend) · F6–F7
 
