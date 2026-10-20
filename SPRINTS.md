@@ -172,10 +172,12 @@ If any check fails, nothing gets pushed. Repo: `github.com/NabilPervez/noor` (pu
 - 5.3 GitHub Actions: pytest plus the leak gate on every push.
 
 **Definition of Done**
-- [ ] In a fresh clone, run with a timer: venv, install, `noor ingest samples/library`, `noor ask …`.
+- [x] In a fresh clone, run with a timer: venv, install, `noor ingest samples/library`, `noor ask …`.
       It answers in under 10 min, following only the README.
-- [ ] The README shows the cost and eval numbers and links `reports/` and `governance/`.
-- [ ] The demo GIF shows only `samples/` content. CI is green on `main`. Tag `sprint-5` is pushed.
+      *Status 2026-10-20: 149 s for clone, install, ingest and first answer, with pip downloading cold; plus
+      ~2.3 GB of Ollama models with the README's llama3.2:3b quick start.*
+- [x] The README shows the cost and eval numbers and links `reports/` and `governance/`.
+- [x] The demo GIF shows only `samples/` content. CI is green on `main`. Tag `sprint-5` is pushed.
 
 ## Sprint 6 — Added Features · F11–F20
 

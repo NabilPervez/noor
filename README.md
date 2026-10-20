@@ -77,10 +77,14 @@ python -m venv .venv
 .venv/Scripts/activate          # Windows (Git Bash). macOS/Linux: source .venv/bin/activate
 pip install -e ".[dev]"
 python scripts/install_hooks.py
-ollama pull nomic-embed-text
-ollama pull qwen2.5:7b          # or a smaller model, e.g. llama3.2:3b
-cp .env.example .env
+ollama pull nomic-embed-text    # 274 MB
+ollama pull llama3.2:3b         # 2 GB; quick to download
+cp .env.example .env            # then set NOOR_MODEL=ollama:llama3.2:3b in .env
 ```
+
+Measured on a fresh clone: clone, install, ingest and a first cited answer took **2.5 minutes**, plus
+model downloads of about 2.3 GB. For better answers, `ollama pull qwen2.5:7b` (4.7 GB), which is the
+`.env.example` default and the model the evals ran on.
 
 Try it on the included sample book:
 
