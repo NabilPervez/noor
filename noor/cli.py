@@ -59,6 +59,7 @@ def ask(
     question: str = typer.Argument(..., help="Your question"),
     model: str = typer.Option(None, help="Override NOOR_MODEL, e.g. claude-haiku or ollama:qwen2.5:7b"),
     show_passages: bool = typer.Option(False, "--passages", help="Print the retrieved passages too"),
+    cache: bool = typer.Option(True, help="Reuse a cached answer for a repeated question"),
 ):
     """Answer QUESTION from the library, with numbered citations."""
     from ingest.sources import citation
@@ -67,7 +68,8 @@ def ask(
 
     s = Settings()
     provider = get_provider(model or s.model, s.ollama_host)
-    a = run(question, _store(s), provider, s.db_path, k=s.top_k, min_similarity=s.min_similarity)
+    a = run(question, _store(s), provider, s.db_path, k=s.top_k, min_similarity=s.min_similarity,
+            use_cache=cache)
     typer.echo(a.text)
     if a.refused:
         typer.echo(f"\n({a.reason})")
@@ -79,7 +81,9 @@ def ask(
         for h in a.hits:
             typer.echo(f"\n--- {h.id}  sim={h.similarity:.3f} bm25={h.bm25:.1f}\n{h.text[:600]}")
     g = a.generation
-    if g:
+    if a.cached:
+        typer.echo("\n(answer cache hit: $0, no model call)")
+    elif g:
         typer.echo(f"\n{g.model} | {g.tokens_in} in / {g.tokens_out} out | ${g.cost_usd:.5f} | {g.latency_ms} ms")
 
 

@@ -12,18 +12,26 @@ from typing import Protocol
 import httpx
 
 CLAUDE_ALIASES = {"claude-haiku": "claude-haiku-5-5", "claude-sonnet": "claude-sonnet-5-5"}
-# USD per 1M tokens (input, output). Anthropic pricing as of 2026-10-06; re-check in Sprint 2.
-PRICES = {"claude-haiku-5-5": (0.10, 0.50), "claude-sonnet-5-5": (2.00, 10.00)}
+# USD per 1M tokens: (input, output, 5-minute cache write, cache read).
+# Source: platform.claude.com/docs/en/about-claude/pricing, read 2026-10-20.
+# Haiku 5.5 rates are for prompts up to 100K tokens (Noor's prompts are ~2-4K).
+PRICES_DATE = "2026-10-20"
+PRICES = {
+    "claude-haiku-5-5": (0.10, 0.50, 0.125, 0.01),
+    "claude-sonnet-5-5": (2.00, 10.00, 2.50, 0.10),
+}
 
 
 @dataclass
 class Generation:
     text: str
     model: str
-    tokens_in: int
+    tokens_in: int          # uncached input tokens
     tokens_out: int
     latency_ms: int
     cost_usd: float
+    cache_read: int = 0     # input tokens served from the prompt cache
+    cache_write: int = 0    # input tokens written to the prompt cache
 
 
 class LLMProvider(Protocol):
@@ -32,9 +40,9 @@ class LLMProvider(Protocol):
     def generate(self, system: str, user: str) -> Generation: ...
 
 
-def cost(model: str, tokens_in: int, tokens_out: int) -> float:
-    p_in, p_out = PRICES.get(model, (0.0, 0.0))
-    return round((tokens_in * p_in + tokens_out * p_out) / 1_000_000, 8)
+def cost(model: str, tokens_in: int, tokens_out: int, cache_write: int = 0, cache_read: int = 0) -> float:
+    p_in, p_out, p_w, p_r = PRICES.get(model, (0.0, 0.0, 0.0, 0.0))
+    return round((tokens_in * p_in + tokens_out * p_out + cache_write * p_w + cache_read * p_r) / 1_000_000, 8)
 
 
 class ClaudeProvider:
@@ -49,15 +57,21 @@ class ClaudeProvider:
     def generate(self, system: str, user: str) -> Generation:
         t0 = time.perf_counter()
         r = self.client.messages.create(
-            model=self.model, max_tokens=2000, system=system,
+            model=self.model, max_tokens=2000,
+            # The system prompt is identical on every call and over the 512-token minimum,
+            # so it is cached; the passages and question come after the breakpoint.
+            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
             output_config={"effort": "low"},
             messages=[{"role": "user", "content": user}])
         text = "".join(b.text for b in r.content if b.type == "text")
         if r.stop_reason == "refusal":
             text = "NOT_FOUND"
-        tin, tout = r.usage.input_tokens, r.usage.output_tokens
-        return Generation(text, self.model, tin, tout, int((time.perf_counter() - t0) * 1000),
-                          cost(self.model, tin, tout))
+        u = r.usage
+        cr = getattr(u, "cache_read_input_tokens", 0) or 0
+        cw = getattr(u, "cache_creation_input_tokens", 0) or 0
+        return Generation(text, self.model, u.input_tokens, u.output_tokens,
+                          int((time.perf_counter() - t0) * 1000),
+                          cost(self.model, u.input_tokens, u.output_tokens, cw, cr), cr, cw)
 
 
 class OllamaProvider:

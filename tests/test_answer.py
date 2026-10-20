@@ -70,3 +70,42 @@ def test_cost_math():
     assert cost("claude-haiku-5-5", 1_000_000, 1_000_000) == 0.60
     assert cost("claude-sonnet-5-5", 4000, 400) == 0.012
     assert cost("ollama:qwen2.5:7b", 4000, 400) == 0.0
+    # cache write 1M at $0.125, cache read 1M at $0.01 (Haiku 5.5)
+    assert cost("claude-haiku-5-5", 0, 0, cache_write=1_000_000) == 0.125
+    assert cost("claude-haiku-5-5", 0, 0, cache_read=1_000_000) == 0.01
+
+
+def test_system_prompt_is_long_enough_to_cache():
+    from rag.answer import SYSTEM
+    from rag.chunk import tokens
+    assert tokens(SYSTEM) > 512 * 1.1      # 512-token minimum for Haiku/Sonnet 5.5, with margin
+
+
+def test_repeat_question_hits_answer_cache(store, tmp_path):
+    db = tmp_path / "q.db"
+    hit = retrieve(store, "gratitude", k=1)[0]
+    llm = FakeProvider(f"Noticing blessings [{hit.id}].")
+    a1 = ask("What is gratitude?", store, llm, db, min_similarity=MIN_SIM)
+    a2 = ask("  what is GRATITUDE ", store, llm, db, min_similarity=MIN_SIM)   # normalizes the same
+    assert llm.calls == 1
+    assert a2.cached and not a1.cached
+    assert a2.text == a1.text and [h.id for _, h in a2.citations] == [hit.id]
+    rows = sqlite3.connect(db).execute("select cached, cost_usd, tokens_in from queries order by id").fetchall()
+    assert rows[1] == (1, 0.0, 0)
+
+
+def test_cache_key_changes_with_model_and_index(store):
+    from rag.answer import cache_key
+    k1 = cache_key("q", "m1", store, 6, 0.65)
+    assert k1 == cache_key("Q?", "m1", store, 6, 0.65)
+    assert k1 != cache_key("q", "m2", store, 6, 0.65)
+    store.manifest["new/chapter"] = "abc"
+    assert k1 != cache_key("q", "m1", store, 6, 0.65)
+
+
+def test_no_cache_flag_always_calls_model(store, tmp_path):
+    hit = retrieve(store, "gratitude", k=1)[0]
+    llm = FakeProvider(f"Noticing blessings [{hit.id}].")
+    for _ in range(2):
+        ask("What is gratitude?", store, llm, tmp_path / "q.db", min_similarity=MIN_SIM, use_cache=False)
+    assert llm.calls == 2

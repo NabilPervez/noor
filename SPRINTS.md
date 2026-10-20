@@ -119,12 +119,14 @@ If any check fails, nothing gets pushed. Repo: `github.com/NabilPervez/noor` (pu
 - 2.4 A fixed 20-question bench run on Haiku, Sonnet and one Ollama model.
 
 **Definition of Done**
-- [ ] `reports/cost.md` exists with: prices and the date they were pulled from Anthropic's pricing
+- [x] `reports/cost.md` exists with: prices and the date they were pulled from Anthropic's pricing
       page; average tokens in and out; $/query per model; monthly cost at 100, 1k and 10k queries;
       Ollama latency and hardware note.
-- [ ] Caching savings are shown as before-and-after %, measured from the logs: prompt cache and answer cache each.
-- [ ] Asking the same question twice: the second log row has `cached=1` and `cost_usd=0`.
-- [ ] `pytest` exits 0, with tests for the cost math and the cache key. Leak gate exits 0. Tag `sprint-2` is pushed.
+- [~] Caching savings are shown as before-and-after %, measured from the logs: prompt cache and answer cache each.
+      *Status 2026-10-20: the Ollama rows and the answer-cache saving are measured. Claude cost and prompt-cache
+      savings are projected from measured token counts until an `ANTHROPIC_API_KEY` exists (see reports/cost.md).*
+- [x] Asking the same question twice: the second log row has `cached=1` and `cost_usd=0`.
+- [x] `pytest` exits 0, with tests for the cost math and the cache key. Leak gate exits 0. Tag `sprint-2` is pushed.
 
 ## Sprint 3 — Evals (~1 weekend)
 

@@ -1,6 +1,7 @@
 """Chroma vector store + BM25 index + per-chapter manifest, all under data/ (git-ignored)."""
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import pickle
@@ -91,6 +92,10 @@ class Store:
             with open(self.bm25_path, "rb") as f:
                 self._bm25 = pickle.load(f)
         return self._bm25
+
+    def index_version(self) -> str:
+        """Changes whenever any chapter is added, changed or removed (keys the answer cache)."""
+        return hashlib.sha256(json.dumps(self.manifest, sort_keys=True).encode()).hexdigest()[:16]
 
     def count(self) -> int:
         return self.col.count()
