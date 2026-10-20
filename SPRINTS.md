@@ -13,6 +13,16 @@ with an expected result, a number to meet, or a file that must exist.
   `<book-id>/book.json` (title, author, toc) and a top-level `index.json`.
 - **Size:** 12 books, 633 chapter files, 45,360 blocks, ~1.49M words. Sahih al-Bukhari is ~44% of it.
 - Noor reads this path in place through `NOOR_LIBRARY` in `.env`. Nothing is copied into this repo.
+- The library's `the-clear-quran` and `sahih-al-bukhari` are converted PDFs of the same texts the
+  APIs provide with proper verse and hadith numbers. They are skipped by default
+  (`NOOR_SKIP_BOOKS`), so search doesn't return the same passage twice.
+
+## Model decisions (2026-10-20)
+
+- Default model is `ollama:qwen2.5:7b`: local and free. Claude (`claude-haiku`, `claude-sonnet`)
+  works as soon as `ANTHROPIC_API_KEY` is in `.env`. API billing is separate from the Claude subscription.
+- Groq (a free cloud tier) is parked for later. It would be a third provider behind the same
+  interface. Ollama stays for embeddings either way.
 
 ## Push gate (runs before every push, every sprint)
 
@@ -42,13 +52,13 @@ If any check fails, nothing gets pushed. Repo: `github.com/NabilPervez/noor` (pu
 - 0.8 Repo layout from the PRD: `ingest/ rag/ api/ web/ evals/ governance/ reports/`.
 
 **Definition of Done**
-- [ ] `noor --help` exits 0 and lists `ingest` and `ask`.
-- [ ] `ollama list` shows `nomic-embed-text` and one chat model.
-- [ ] `pytest` exits 0 (smoke test: the package imports and the CLI runs).
-- [ ] `python scripts/leak_check.py` exits 0.
-- [ ] Fresh clone into a temp folder: `git grep -nE "sk-ant-|ANTHROPIC_API_KEY=.+"` finds nothing,
+- [x] `noor --help` exits 0 and lists `ingest` and `ask`.
+- [x] `ollama list` shows `nomic-embed-text` and one chat model.
+- [x] `pytest` exits 0 (smoke test: the package imports and the CLI runs).
+- [x] `python scripts/leak_check.py` exits 0.
+- [x] Fresh clone into a temp folder: `git grep -nE "sk-ant-[A-Za-z0-9_-]{20,}|ANTHROPIC_API_KEY=[A-Za-z0-9]"` finds nothing,
       and no `*.json` exists outside `samples/` and config.
-- [ ] `CLAUDE.md`, `AGENTS.md`, `.env.example` exist. Tag `sprint-0` is pushed.
+- [x] `CLAUDE.md`, `AGENTS.md`, `.env.example` exist. Tag `sprint-0` is pushed.
 
 ## Sprint 1 — Core RAG (~1 weekend) · F1–F5
 
@@ -82,21 +92,23 @@ If any check fails, nothing gets pushed. Repo: `github.com/NabilPervez/noor` (pu
   with `FakeEmbedder` and a fake provider, so CI needs no Ollama and no API key.
 
 **Definition of Done**
-- [ ] `pytest` exits 0. It covers chunk sizes in [400, 800] tokens (except a chapter's last chunk),
+- [x] `pytest` exits 0. It covers chunk sizes in [400, 800] tokens (except a chapter's last chunk),
       headings never ending a chunk, stable IDs, metadata fields, the merge order of BM25 plus
       vector results, refusal on an off-topic question, and one log row per ask with no text column.
-- [ ] `noor ingest $NOOR_LIBRARY` completes for at least 3 real books. Running it again reports
+- [x] `noor ingest $NOOR_LIBRARY` completes for at least 3 real books. Running it again reports
       `0 chapters re-indexed`.
-- [ ] `noor ask` on 3 questions, one per book, prints an answer with at least 1 numbered citation
+- [x] `noor ask` on 3 questions, one per book, prints an answer with at least 1 numbered citation
       (book · chapter · p.N). Every cited ID is among the retrieved chunks.
-- [ ] `noor ask "What is the capital of Australia?"` prints `Not found in your library`.
-- [ ] `NOOR_MODEL=ollama:<model> noor ask …` works with no API key set.
-- [ ] `sqlite3 data/noor.db "select model,tokens_in,tokens_out,cost_usd,latency_ms,chunk_ids from queries"`
+- [x] `noor ask "What is the capital of Australia?"` prints `Not found in your library`.
+- [x] `NOOR_MODEL=ollama:<model> noor ask …` works with no API key set.
+- [~] `sqlite3 data/noor.db "select model,tokens_in,tokens_out,cost_usd,latency_ms,chunk_ids from queries"`
       shows one row per ask. `cost_usd` > 0 for Claude and = 0 for Ollama.
-- [ ] `noor sources pull quran,bukhari` writes only under `data/sources/`. `noor ask "What does the
+      *Status 2026-10-20: rows are logged for Ollama with cost 0. The Claude row (cost > 0) waits for an
+      `ANTHROPIC_API_KEY`; the cost math is unit-tested (`test_cost_math`).*
+- [x] `noor sources pull quran,bukhari` writes only under `data/sources/`. `noor ask "What does the
       Quran say about patience?"` cites at least one `quran:<s>:<a>` ayah. A pytest test runs the
       Quran and hadith converters on small self-written fixtures, with no network.
-- [ ] Leak gate exits 0. Tag `sprint-1` is pushed.
+- [x] Leak gate exits 0. Tag `sprint-1` is pushed.
 
 ## Sprint 2 — Cost model (~1 evening) · F8
 

@@ -23,9 +23,10 @@ python -m venv .venv && .venv/Scripts/activate      # Windows; source .venv/bin/
 pip install -e ".[dev]"
 python scripts/install_hooks.py                      # installs the pre-commit leak hook
 noor --help
-noor ingest <library path>                           # Sprint 1
-noor sources pull quran,bukhari                      # Sprint 1
-noor ask "question"                                  # Sprint 1
+noor sources pull quran,bukhari                      # Quran/hadith into data/sources/
+noor ingest [library path]                           # default NOOR_LIBRARY; only changed chapters
+noor ask "question"                                  # add --passages to see what was retrieved
+noor log                                             # recent queries: model, tokens, cost, latency
 pytest
 python scripts/leak_check.py                         # before every push
 ```

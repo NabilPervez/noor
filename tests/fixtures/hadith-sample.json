@@ -1,0 +1,7 @@
+{"metadata": {"name": "Sample Collection", "sections": {"0": "", "1": "Book of Testing", "2": "Book of Samples"},
+ "section_details": {"0": {"hadithnumber_first": 0, "hadithnumber_last": 0}, "1": {"hadithnumber_first": 1, "hadithnumber_last": 2}, "2": {"hadithnumber_first": 3, "hadithnumber_last": 3}}},
+ "hadiths": [
+  {"hadithnumber": 1, "text": "Sample report one, written for Noor tests, on patience.", "grades": [{"name": "Test Grader", "grade": "Sahih"}], "reference": {"book": 1, "hadith": 1}},
+  {"hadithnumber": 2, "text": "Sample report two on kindness.", "grades": [], "reference": {"book": 1, "hadith": 2}},
+  {"hadithnumber": 3, "text": "Sample report three on honesty.", "grades": [{"name": "Test Grader", "grade": "Daif"}], "reference": {"book": 2, "hadith": 1}}
+]}
