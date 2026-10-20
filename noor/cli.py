@@ -60,10 +60,12 @@ def ask(
     model: str = typer.Option(None, help="Override NOOR_MODEL, e.g. claude-haiku or ollama:qwen2.5:7b"),
     show_passages: bool = typer.Option(False, "--passages", help="Print the retrieved passages too"),
     cache: bool = typer.Option(True, help="Reuse a cached answer for a repeated question"),
+    save: bool = typer.Option(False, help="Save the answer to the notebook (export with `noor export`)"),
 ):
     """Answer QUESTION from the library, with numbered citations."""
     from ingest.sources import citation
     from rag.answer import ask as run
+    from rag.features import confidence
     from rag.providers import get_provider
 
     s = Settings()
@@ -75,8 +77,18 @@ def ask(
         typer.echo(f"\n({a.reason})")
     else:
         typer.echo("\nSources:")
+        from rag.features import citation_json, grade_flag
         for n, h in a.citations:
-            typer.echo(f"  [{n}] {citation(h.meta)}  <{h.id}>")
+            weak = "  !! weak grade" if grade_flag(h.meta.get("grades")) else ""
+            badge = "" if a.cached else f"  ({confidence(h.similarity)})"
+            typer.echo(f"  [{n}] {citation(h.meta)}{badge}{weak}  <{h.id}>")
+            link = citation_json(n, h, s.book_reader_url)["book_reader_url"]
+            if link:
+                typer.echo(f"      open: {link}")
+        if save:
+            from rag.features import save_note
+            save_note(s.db_path, question, a.text, [citation_json(n, h) for n, h in a.citations])
+            typer.echo("  (saved to notebook)")
     if show_passages:
         for h in a.hits:
             typer.echo(f"\n--- {h.id}  sim={h.similarity:.3f} bm25={h.bm25:.1f}\n{h.text[:600]}")
@@ -100,6 +112,88 @@ def log(limit: int = typer.Option(10, help="Rows to show")):
     for ts, m, tin, tout, c, lat, ref, cited in rows:
         typer.echo(f"{ts}  {m:24} {tin:>6} in {tout:>5} out  ${c:.5f}  {lat:>6} ms  "
                    f"{'REFUSED' if ref else len(json.loads(cited)):>7} {'' if ref else 'cites'}")
+
+
+@app.command()
+def compare(
+    topic: str = typer.Argument(..., help="Topic to compare, e.g. 'patience in hardship'"),
+    books: str = typer.Option(..., help="Comma list of book ids (see `noor books`)"),
+    model: str = typer.Option(None, help="Override NOOR_MODEL"),
+):
+    """F16: how each book treats one topic, side by side, each with its own citations."""
+    from ingest.sources import citation
+    from rag.features import compare as run
+    from rag.providers import get_provider
+    s = Settings()
+    views = run(topic, [b.strip() for b in books.split(",") if b.strip()], _store(s),
+                get_provider(model or s.model, s.ollama_host), min_similarity=s.min_similarity)
+    for v in views:
+        typer.echo(f"\n=== {v.book_title} ===")
+        typer.echo(v.answer.text if not v.answer.refused else f"{v.answer.text} ({v.answer.reason})")
+        for n, h in v.answer.citations:
+            typer.echo(f"  [{n}] {citation(h.meta)}")
+
+
+@app.command()
+def books():
+    """List the book ids in the index."""
+    s = Settings()
+    keys = sorted({k.split("/")[0] for k in _store(s).manifest})
+    typer.echo("\n".join(keys))
+
+
+@app.command()
+def study(
+    chapter: str = typer.Argument(..., help="<book-id>/<chapter-id>, e.g. beginning-of-guidance/028-envy"),
+    model: str = typer.Option(None, help="Override NOOR_MODEL"),
+):
+    """F17: a cited summary and a 5-question quiz for one chapter."""
+    from ingest.sources import citation
+    from rag.features import study as run
+    from rag.providers import get_provider
+    s = Settings()
+    a = run(chapter, _store(s), get_provider(model or s.model, s.ollama_host))
+    typer.echo(a.text if not a.refused else f"{a.text} ({a.reason})")
+    for n, h in a.citations:
+        typer.echo(f"  [{n}] {citation(h.meta)}")
+
+
+@app.command()
+def daily(day: str = typer.Option(None, help="YYYY-MM-DD (default: today)")):
+    """F18: one passage and a reflection prompt; the same for everyone on a given day."""
+    from datetime import date
+    from ingest.sources import citation
+    from rag.features import daily as run
+    hit, prompt = run(_store(Settings()), date.fromisoformat(day) if day else None)
+    typer.echo(f"{citation(hit.meta)}\n\n{hit.text}\n\nReflect: {prompt}")
+
+
+@app.command()
+def glossary(term: str = typer.Argument(None, help="An Arabic term, e.g. sabr. Omit to list all terms")):
+    """F19: what a term means, and where your library uses it."""
+    from ingest.sources import citation
+    from rag.features import glossary as run, glossary_terms
+    if not term:
+        typer.echo(", ".join(glossary_terms()))
+        return
+    entry, hits = run(term, _store(Settings()))
+    if not entry:
+        typer.echo(f"{term!r} is not in the glossary. Try: noor glossary")
+        raise typer.Exit(1)
+    key, english, gloss = entry
+    typer.echo(f"{key}: {gloss}\n\nIn your library:")
+    for n, h in enumerate(hits, 1):
+        typer.echo(f"  [{n}] {citation(h.meta)}  <{h.id}>")
+
+
+@app.command()
+def export(out: Path = typer.Argument(Path("data/notebook.md"), help="Markdown file to write")):
+    """F15: export saved answers to Markdown (default inside git-ignored data/)."""
+    from rag.features import export_notes
+    s = Settings()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(export_notes(s.db_path), encoding="utf-8")
+    typer.echo(f"wrote {out}")
 
 
 @sources_app.command("pull")

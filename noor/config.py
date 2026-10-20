@@ -26,6 +26,8 @@ class Settings:
     # Refuse when the best passage's cosine similarity is below this. Tuned in Sprint 3.
     min_similarity: float = field(default_factory=lambda: float(os.environ.get("NOOR_MIN_SIMILARITY", "0.65")))
     # Library books that duplicate an API source (the API copy has proper verse/hadith numbers).
+    # F11: base URL of a Book Reader build with the deep-link handler (docs/book-reader-deeplink.md).
+    book_reader_url: str | None = field(default_factory=lambda: os.environ.get("NOOR_BOOK_READER_URL") or None)
     skip_books: list[str] = field(default_factory=lambda: _list("NOOR_SKIP_BOOKS", "the-clear-quran,sahih-al-bukhari"))
 
     @property

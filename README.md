@@ -155,8 +155,25 @@ python -m evals.run --model claude-haiku --judge claude-sonnet && python -m eval
 | `noor sources pull quran,bukhari,muslim` | Download Quran / hadith collections into `data/sources/` |
 | `noor ask "…" [--model m] [--passages] [--no-cache]` | Answer with numbered citations |
 | `noor log` | Recent queries: model, tokens, cost, latency |
+| `noor compare "<topic>" --books a,b` | How each book treats a topic, side by side, each cited |
+| `noor study <book>/<chapter>` | Cited summary plus a 5-question quiz for one chapter |
+| `noor daily` | One passage and a reflection prompt for today |
+| `noor glossary [term]` | What an Arabic term means, and where your library uses it |
+| `noor ask "…" --save` / `noor export` | Save answers to a notebook; export it as Markdown |
+| `noor books` | List indexed book ids |
 | `pytest` | Tests (self-written fixtures; no model, key or network needed) |
 | `python scripts/leak_check.py` | Prove no library text is in the repo or its history |
+
+## Everyday features
+
+- **Arabic terms:** ask about *sabr*, *tawakkul* or *ikhlas* and Noor also searches the English meaning
+  (term questions hit@5: 90% → 100%).
+- **Confidence badges:** each source is marked *strong* or *partial* match. Weak hadith grades get a warning chip.
+- **Thumbs up/down:** a 👎 queues the question for the eval golden set (`python -m evals.promote`).
+- **Notebook:** save answers and export them to Markdown with their sources.
+- **Compare, study, daily, glossary:** see the commands above.
+- **Book Reader links:** set `NOOR_BOOK_READER_URL` once Book Reader has the handler in
+  [`docs/book-reader-deeplink.md`](docs/book-reader-deeplink.md).
 
 ## Copyright and privacy
 

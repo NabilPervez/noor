@@ -12,6 +12,7 @@ from rag.log import cache_get, cache_put, log_query
 from rag.providers import Generation, LLMProvider
 from rag.retrieve import Hit, retrieve
 from rag.store import Store
+from rag.terms import expand
 
 NOT_FOUND = "Not found in your library."
 # Kept identical across calls, and longer than the 512-token minimum, so Claude caches it.
@@ -46,6 +47,7 @@ class Answer:
     generation: Generation | None = None
     reason: str = ""
     cached: bool = False
+    query_id: int | None = None            # row in the query log (F14 feedback refers to it)
 
 
 def build_prompt(question: str, hits: list[Hit], history: list[tuple[str, str]] | None = None) -> str:
@@ -59,7 +61,8 @@ def build_prompt(question: str, hits: list[Hit], history: list[tuple[str, str]] 
 
 def retrieval_query(question: str, history: list[tuple[str, str]] | None) -> str:
     """A follow-up like "what about the second one?" is searched together with the previous question."""
-    return f"{history[-1][0]} {question}" if history else question
+    q = f"{history[-1][0]} {question}" if history else question
+    return expand(q)        # F12: "sabr" also searches "patience perseverance ..."
 
 
 def extract_citations(text: str, allowed: list[str]) -> tuple[str, list[str]]:
@@ -139,7 +142,7 @@ def ask(question: str, store: Store, provider: LLMProvider, db_path: Path, *,
         ans = Answer(hit["text"], hit["refused"], [(n + 1, by_id[c]) for n, c in enumerate(hit["cited"]) if c in by_id],
                      [by_id[i] for i in hit["retrieved"] if i in by_id],
                      Generation(hit["text"], provider.name, 0, 0, 0, 0.0), hit["reason"], cached=True)
-        log_query(db_path, question=question, model=provider.name, tokens_in=0, tokens_out=0, cost_usd=0.0,
+        ans.query_id = log_query(db_path, question=question, model=provider.name, tokens_in=0, tokens_out=0, cost_usd=0.0,
                   latency_ms=int((time.perf_counter() - t0) * 1000), retrieval_ms=0,
                   chunk_ids=hit["retrieved"], cited_ids=hit["cited"], top_similarity=hit["top"],
                   refused=hit["refused"], cached=True, tag=tag)
@@ -167,7 +170,7 @@ def ask(question: str, store: Store, provider: LLMProvider, db_path: Path, *,
     if use_cache:
         cache_put(db_path, key, provider.name, {"text": ans.text, "refused": ans.refused, "cited": cited_ids,
                                                 "retrieved": [h.id for h in hits], "reason": ans.reason, "top": top})
-    log_query(db_path, question=question, model=gen.model, tokens_in=gen.tokens_in,
+    ans.query_id = log_query(db_path, question=question, model=gen.model, tokens_in=gen.tokens_in,
               tokens_out=gen.tokens_out, cost_usd=gen.cost_usd,
               latency_ms=int((time.perf_counter() - t0) * 1000), retrieval_ms=retrieval_ms,
               chunk_ids=[h.id for h in hits], cited_ids=cited_ids, top_similarity=top,

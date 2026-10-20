@@ -197,3 +197,21 @@ Ordered by priority. Each feature has its own test, and each must not break the 
 | F20 | Hadith grade | Grades are already stored from Sprint 1. They're shown next to each hadith citation, and a weak grade gets a warning chip |
 
 **DoD:** each row's "Done when" passes, `pytest` exits 0, the eval is still GO, the leak gate exits 0, and tag `sprint-6` is pushed.
+
+**Status 2026-10-20** (tests in `tests/test_features.py`; 54 tests pass):
+
+| ID | Status | Evidence |
+| --- | --- | --- |
+| F11 | [~] | Link format tested; shown when `NOOR_BOOK_READER_URL` is set. The Book Reader side is documented in `docs/book-reader-deeplink.md` but **not applied** (separate, public repo) |
+| F12 | [x] | 35-term map; term questions hit@5 rise from 90% to **100%** (`reports/terms.md`); golden hit@6 unchanged at 86.5% |
+| F13 | [x] | strong ≥ 0.75 similarity, else partial; unit-tested; shown in CLI and UI |
+| F14 | [x] | 👍/👎 in UI → `feedback` table (local); `python -m evals.promote` writes ID-only candidates; verified in the browser |
+| F15 | [x] | Save in UI / `noor ask --save`; `noor export` and `/api/notes/export` write Markdown with sources. Notion export not built |
+| F16 | [x] | `noor compare` answers per book with its own citations and refuses per book; on the real index 1 of 3 books answered "patience in hardship" (the other two refused, worth a look) |
+| F17 | [~] | `noor study` writes a summary + 5-question quiz with validated citations; qwen2.5:7b cited only once instead of every item |
+| F18 | [x] | `noor daily`: deterministic per date (tested) |
+| F19 | [x] | `noor glossary`: 35 terms with self-written glosses plus cited library passages |
+| F20 | [x] | Grades kept from hadith-api; weak grades flagged in CLI and UI (tested on a fixture). Bukhari in the API carries no grades |
+
+"Eval is still GO": the Sprint 3 eval was NO-GO before Sprint 6 (groundedness). Sprint 6 changed only retrieval
+(query expansion), and the retrieval-only golden run shows no regression (86.5% → 86.5%).

@@ -33,11 +33,36 @@ function AnswerText({ text, citations, onCite }) {
   );
 }
 
-function Message({ m, onCite }) {
+// F13: how well each source matches the question. F20: warn on weak hadith grades.
+function Badges({ c }) {
+  return (
+    <>
+      {c.confidence && (
+        <span title={`similarity ${c.similarity}`}
+          className={`ml-2 rounded-full px-2 py-px text-[0.65rem] uppercase tracking-wide ${c.confidence === "strong"
+            ? "bg-gold-500/15 text-gold-300" : "bg-parchment/10 text-parchment/50"}`}>
+          {c.confidence} match
+        </span>
+      )}
+      {c.grade_flag === "weak" && (
+        <span title={c.grades} className="ml-2 rounded-full bg-red-500/15 px-2 py-px text-[0.65rem] uppercase tracking-wide text-red-300">
+          weak grade
+        </span>
+      )}
+    </>
+  );
+}
+
+function Message({ m, question, onCite }) {
+  const [vote, setVote] = useState(0);
+  const [saved, setSaved] = useState(false);
   if (m.role === "user") {
     return <div className="font-serif text-xl text-gold-300">{m.text}</div>;
   }
   if (m.error) return <div className="font-ui text-sm text-red-300">Error: {m.error}</div>;
+  const sendVote = (v) => api("feedback", { query_id: m.query_id, question, vote: v, cited_ids: m.citations.map((c) => c.id) })
+    .then(() => setVote(v)).catch(() => {});
+  const save = () => api("notes", { question, answer: m.answer, citations: m.citations }).then(() => setSaved(true)).catch(() => {});
   return (
     <div className="space-y-3">
       <AnswerText text={m.answer} citations={m.citations} onCite={onCite} />
@@ -50,12 +75,24 @@ function Message({ m, onCite }) {
                 className="text-left font-ui text-sm text-parchment/70 hover:text-gold-300">
                 <span className="text-gold-500">[{c.n}]</span> {c.label}
               </button>
+              <Badges c={c} />
             </li>
           ))}
         </ol>
       )}
-      <div className="font-ui text-[0.7rem] text-parchment/40">
-        {m.cached ? "answer cache · $0" : `${m.model} · ${m.tokens_in} in / ${m.tokens_out} out · $${m.cost_usd.toFixed(5)} · ${(m.latency_ms / 1000).toFixed(1)} s`}
+      <div className="flex flex-wrap items-center gap-3 font-ui text-[0.7rem] text-parchment/40">
+        <span>{m.cached ? "answer cache · $0" : `${m.model} · ${m.tokens_in} in / ${m.tokens_out} out · $${m.cost_usd.toFixed(5)} · ${(m.latency_ms / 1000).toFixed(1)} s`}</span>
+        <span className="flex gap-1" aria-label="Rate this answer">
+          <button onClick={() => sendVote(1)} aria-pressed={vote === 1} title="Good answer"
+            className={`rounded px-1 ${vote === 1 ? "text-gold-300" : "hover:text-gold-300"}`}>👍</button>
+          <button onClick={() => sendVote(-1)} aria-pressed={vote === -1} title="Bad answer: adds it to the eval candidates"
+            className={`rounded px-1 ${vote === -1 ? "text-red-300" : "hover:text-red-300"}`}>👎</button>
+        </span>
+        {!m.refused && (
+          <button onClick={save} disabled={saved} className="hover:text-gold-300 disabled:text-gold-500/70">
+            {saved ? "Saved to notebook" : "Save"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -78,6 +115,11 @@ function Drawer({ cite, onClose }) {
           <div className="font-ui text-xs uppercase tracking-widest text-gold-500">Source [{cite.n}]</div>
           <h2 className="font-serif text-2xl text-gold-300">{cite.label}</h2>
           {cite.grades && <div className="mt-1 font-ui text-xs text-parchment/60">Grade: {cite.grades}</div>}
+          <div className="mt-1 font-ui text-xs"><Badges c={cite} /></div>
+          {cite.book_reader_url && (
+            <a href={cite.book_reader_url} target="_blank" rel="noreferrer"
+              className="mt-2 inline-block font-ui text-xs text-gold-400 underline hover:text-gold-300">Open in Book Reader ↗</a>
+          )}
         </div>
         <button onClick={onClose} className="font-ui text-parchment/60 hover:text-gold-300" aria-label="Close">✕</button>
       </header>
@@ -151,6 +193,8 @@ export default function App() {
           <span className="font-ui text-xs text-parchment/50">answers from your library, with sources</span>
         </div>
         <div className="flex items-center gap-3">
+          <a href="/api/notes/export" download="noor-notebook.md"
+            className="font-ui text-xs text-parchment/60 hover:text-gold-300">Export notebook</a>
           <button onClick={() => { setMessages([]); setConversation(null); }}
             className="font-ui text-xs text-parchment/60 hover:text-gold-300">New chat</button>
           <label className="font-ui text-xs text-parchment/60">
@@ -179,7 +223,7 @@ export default function App() {
               <p className="mt-2 font-ui text-sm text-parchment/40">e.g. "What does the Quran say about patience?"</p>
             </div>
           )}
-          {messages.map((m, i) => <Message key={i} m={m} onCite={setCite} />)}
+          {messages.map((m, i) => <Message key={i} m={m} question={messages[i - 1]?.text} onCite={setCite} />)}
           {busy && <div className="font-ui text-sm text-gold-500/70 animate-pulse">Searching your library…</div>}
           <div ref={end} />
         </div>

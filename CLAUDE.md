@@ -27,6 +27,7 @@ noor sources pull quran,bukhari                      # Quran/hadith into data/so
 noor ingest [library path]                           # default NOOR_LIBRARY; only changed chapters
 noor ask "question"                                  # add --passages to see what was retrieved
 noor log                                             # recent queries: model, tokens, cost, latency
+noor compare|study|daily|glossary|export|books       # Sprint 6 features (see README)
 pytest
 python scripts/leak_check.py                         # before every push
 sh scripts/safe_push.sh sprint-N "msg"               # gate + push + tag (never pipe the gate)
@@ -39,7 +40,7 @@ python -m evals.run --model <m> && python -m evals.report
 
 - `noor/cli.py`: CLI entry point
 - `ingest/`: reads the Book Converter / Book Reader library and the Quran/hadith APIs
-- `rag/`: chunk, embed, store, retrieve, providers, answer, log
+- `rag/`: chunk, embed, store, retrieve, providers, answer, log; `features.py` (F11–F20), `terms.py` (Arabic terms)
 - `api/main.py`: FastAPI for the UI (`/api/ask`, `/api/chunk/{id}`, `/api/models`)
 - `web/`: React + Vite + Tailwind chat with citation drawer
 - `evals/`, `reports/`, `governance/`: Sprints 2–4

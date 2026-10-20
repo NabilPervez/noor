@@ -19,7 +19,7 @@ import yaml
 
 from noor.cli import _store
 from noor.config import ROOT, Settings
-from rag.answer import ask
+from rag.answer import ask, retrieval_query
 from rag.providers import get_provider
 from rag.retrieve import Hit, retrieve
 
@@ -88,7 +88,7 @@ def run(model: str | None, judge_model: str | None, retrieval_only: bool, k: int
         out["judge"] = judge_p.name
     for i, q in enumerate(qs, 1):
         t0 = time.perf_counter()
-        hits = retrieve(store, q["q"], k=k)
+        hits = retrieve(store, retrieval_query(q["q"], None), k=k)   # same query as production (F12 expansion)
         row = {"id": q["id"], "q": q["q"], "answerable": q["answerable"],
                "retrieved": [h.id for h in hits],
                "top_similarity": round(max((h.similarity for h in hits), default=0), 4),

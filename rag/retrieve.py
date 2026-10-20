@@ -26,12 +26,13 @@ def rrf(rankings: list[list[str]], k: int = RRF_K) -> dict[str, float]:
     return scores
 
 
-def retrieve(store: Store, question: str, k: int = 6, pool: int = 30) -> list[Hit]:
+def retrieve(store: Store, question: str, k: int = 6, pool: int = 30, where: dict | None = None) -> list[Hit]:
+    """`where` filters by chunk metadata, e.g. {"book_id": "the-straight-path"} (F16 compare)."""
     n = store.count()
     if n == 0:
         return []
     qv = store.embedder.embed_query(question)
-    res = store.col.query(query_embeddings=[qv], n_results=min(pool, n),
+    res = store.col.query(query_embeddings=[qv], n_results=min(pool, n), where=where,
                           include=["documents", "metadatas", "distances"])
     vec_ids = res["ids"][0]
     sims = {i: 1.0 - d for i, d in zip(vec_ids, res["distances"][0])}
@@ -42,7 +43,11 @@ def retrieve(store: Store, question: str, k: int = 6, pool: int = 30) -> list[Hi
     q = tokenize(question)
     if idx["bm25"] is not None and q:
         raw = idx["bm25"].get_scores(q)
-        top = sorted(range(len(raw)), key=lambda i: raw[i], reverse=True)[:pool]
+        rows = range(len(raw))
+        if where:      # rank inside the filter, not the whole corpus
+            allowed = set(store.col.get(where=where, include=[])["ids"])
+            rows = [i for i in rows if idx["ids"][i] in allowed]
+        top = sorted(rows, key=lambda i: raw[i], reverse=True)[:pool]
         bm_scores = {idx["ids"][i]: float(raw[i]) for i in top if raw[i] > 0}
 
     fused = rrf([vec_ids, sorted(bm_scores, key=bm_scores.get, reverse=True)])
