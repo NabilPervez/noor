@@ -1,0 +1,24 @@
+# --- Never commit: book text, derived data, secrets ---
+data/
+library/
+!samples/library/
+chroma/
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
+# Web (Sprint 4)
+node_modules/
+web/dist/

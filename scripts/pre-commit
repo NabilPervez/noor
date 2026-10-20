@@ -1,0 +1,6 @@
+#!/bin/sh
+# Noor leak gate: blocks library JSON, data/, .env and any text that matches the real library.
+PY=python
+[ -x .venv/Scripts/python.exe ] && PY=.venv/Scripts/python.exe
+[ -x .venv/bin/python ] && PY=.venv/bin/python
+exec "$PY" scripts/leak_check.py --staged
