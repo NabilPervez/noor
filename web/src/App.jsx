@@ -110,16 +110,34 @@ export default function App() {
   }, []);
   useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, busy]);
 
+  // Shareable links: ?q=<question> asks it on load; &cite=<n> also opens that source.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const q = p.get("q");
+    if (!q) return;
+    ask(q).then((d) => {
+      const n = Number(p.get("cite"));
+      const c = d?.citations?.find((x) => x.n === n);
+      if (c) setCite(c);
+    });
+  }, []);
+
   async function send(e) {
     e.preventDefault();
     const q = input.trim();
     if (!q || busy) return;
-    setInput(""); setBusy(true);
+    setInput("");
+    await ask(q);
+  }
+
+  async function ask(q) {
+    setBusy(true);
     setMessages((m) => [...m, { role: "user", text: q }]);
     try {
-      const d = await api("ask", { question: q, model, conversation_id: conversation });
+      const d = await api("ask", { question: q, model: model || undefined, conversation_id: conversation });
       setConversation(d.conversation_id);
       setMessages((m) => [...m, { role: "assistant", ...d }]);
+      return d;
     } catch (err) {
       setMessages((m) => [...m, { role: "assistant", error: err.message }]);
     } finally { setBusy(false); }

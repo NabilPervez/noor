@@ -2,6 +2,7 @@
 
   python scripts/leak_check.py            full pre-push audit (exit 0 = safe to push)
   python scripts/leak_check.py --staged   pre-commit check of staged files only
+  python scripts/leak_check.py --ci       CI: everything that doesn't need the private library
 
 A "leak" is any run of 12 consecutive words that also appears in the real library
 (NOOR_LIBRARY) or in downloaded Quran/hadith files (data/sources/). The check fails
@@ -157,7 +158,29 @@ def full() -> int:
     return 1 if fails else 0
 
 
+def ci() -> int:
+    """GitHub Actions has no library, so the 12-word history scan can't run there (it runs locally on
+    every commit and push). CI still enforces ignore rules, protected paths, book-shaped JSON and sample size."""
+    fails = []
+    for path in MUST_IGNORE:
+        if not git("check-ignore", "--no-index", path).strip():
+            fails.append(f"not ignored: {path}")
+    tracked = [n for n in git("ls-tree", "-r", "--name-only", "HEAD").splitlines() if n]
+    items = [(n, git("show", f"HEAD:{n}")) for n in tracked]
+    for n, content in items:
+        if n.startswith("samples/") and len(content.encode("utf-8")) > SAMPLES_MAX_BYTES:
+            fails.append(f"{n} is over {SAMPLES_MAX_BYTES} bytes")
+    fails += check_paths_and_content(items, None)
+    for f in fails:
+        print("FAIL:", f)
+    print("SKIPPED in CI: 12-word library scan (needs the private library; runs locally on every commit and push)")
+    print("LEAK CHECK (CI):", "FAILED" if fails else "PASSED")
+    return 1 if fails else 0
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--staged", action="store_true")
-    sys.exit(staged() if ap.parse_args().staged else full())
+    ap.add_argument("--ci", action="store_true")
+    a = ap.parse_args()
+    sys.exit(staged() if a.staged else ci() if a.ci else full())
